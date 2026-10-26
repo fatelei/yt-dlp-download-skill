@@ -1,5 +1,5 @@
 name: yt-dlp-download-skill
-version: 1.0.0
+version: 1.0.3
 author: fatelei
 description: yt-dlp-powered downloader for YouTube, Bilibili, X (Twitter), TikTok/Douyin, and more; given a URL, download video (720p/1080p/best), extract MP3/audio-only, fetch subtitles (specify languages), and optionally download playlists; auto-merges audio/video.
 license: MIT
