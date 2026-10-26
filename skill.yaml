@@ -20,15 +20,15 @@ entryPoint:
   type: natural
   prompt: |
     You are a video downloader skill that uses yt-dlp.
-    When the user provides a video URL, generate a safe yt-dlp command.
-    If the site is YouTube, prefer adding --cookies-from-browser chrome to avoid 403.
-    Support:
-    - video download (best available)
-    - audio-only extraction (-x --audio-format mp3)
-    - subtitles (--write-subs --sub-langs all)
-    - specific quality via format filters (e.g., height<=720)
-    Use the configured download_path unless the user specifies another safe path.
-    Validate URLs are http(s) and avoid executing arbitrary untrusted shell.
+    Follow SKILL.md and invoke scripts/download.sh with separate, safely quoted arguments.
+    Default to anonymous access and a single video; enable playlists only when requested.
+    Never automatically access browser cookies, credentials, or unrelated local files.
+    On an authentication error, explain the session-data implications and obtain explicit
+    authorization for the target and browser/profile before any separate authenticated command.
+    Announce network access and the output directory before downloading.
+    Pass configured download_path as --path unless the user specifies another destination.
+    Use the existing sandbox; do not request blanket or elevated permissions.
+    Missing dependencies require authorized installation; installer metadata is not consent.
 
 triggers:
   keywords:

@@ -31,58 +31,46 @@ Use yt-dlp to download videos from thousands of sites.
 - User requests audio-only (MP3) extraction
 - User needs subtitles or specific quality
 
-## Safety
-- Never execute arbitrary shell built from untrusted text; always validate URL scheme (http/https only)
-- Prefer the default download path under the user Downloads directory unless a safe path is explicitly provided
+## Safety and authorization
+- Download only the URL and media requested by the user. Default to a single video; enable playlists only when requested.
+- Announce the network download and destination before execution. A download request authorizes these ordinary effects, not access to browser sessions or unrelated files.
+- Use the helper script below. It passes arguments as a Bash array, accepts HTTP(S) URLs, and ignores local yt-dlp configuration. Never build commands with `eval` or interpolate untrusted text into shell source.
+- Default to anonymous access. Do not read browser profiles, cookies, credentials, or environment secrets automatically, including after a 403 error.
+- If authentication is needed, explain that browser cookies contain sensitive session data and that using them sends matching cookies to the requested service. Obtain explicit authorization for the browser/profile and target before a separate authenticated invocation. Never print, export, or upload cookie stores. The helper intentionally has no authentication option.
+- Use the existing sandbox with access to the output directory and required network endpoints. Do not request blanket permissions, elevated execution, or change permissions to bypass a failure.
+- Do not install dependencies, change startup files, create scheduled jobs, or modify this skill during a download. If dependencies are missing, explain the required installation and its local changes; install only when authorized.
 
-## Quick checks
-- Ensure `yt-dlp` exists on PATH; if missing, use installer metadata to guide installation
-- For MP3 extraction, `ffmpeg` is recommended; proceed with a warning if unavailable
+## Prerequisites
+`yt-dlp` must be installed. MP3 extraction requires `ffmpeg`; merging separate video/audio streams also requires it. Installer metadata describes available installation methods, not permission to run them automatically.
 
 ## Common commands
+Run the bundled helper from this skill's directory, passing each argument separately through the execution tool (or properly shell-quoting literal values).
 
-- Best available quality
 ```bash
-yt-dlp -P "~/Downloads/yt-dlp" "VIDEO_URL"
-```
-
-- YouTube with cookies (avoid 403)
-```bash
-yt-dlp -P "~/Downloads/yt-dlp" --cookies-from-browser chrome "YOUTUBE_URL"
-```
-
-- Extract audio (MP3)
-```bash
-yt-dlp -P "~/Downloads/yt-dlp" -x --audio-format mp3 "VIDEO_URL"
-```
-
-- With subtitles (all languages)
-```bash
-yt-dlp -P "~/Downloads/yt-dlp" --write-subs --sub-langs all "VIDEO_URL"
-```
-
-- Specific quality (720p / 1080p)
-```bash
-yt-dlp -P "~/Downloads/yt-dlp" -f "bestvideo[height<=720]+bestaudio/best[height<=720]" "VIDEO_URL"
-```
-```bash
-yt-dlp -P "~/Downloads/yt-dlp" -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]" "VIDEO_URL"
-```
-
-- List formats, then pick one
-```bash
-yt-dlp -F "VIDEO_URL"
-yt-dlp -P "~/Downloads/yt-dlp" -f FORMAT_ID "VIDEO_URL"
+# Best available quality, single video
+bash scripts/download.sh -- "https://example.com/video"
+# MP3 audio
+bash scripts/download.sh --audio -- "https://example.com/video"
+# Subtitles
+bash scripts/download.sh --subs -- "https://example.com/video"
+# Maximum height; use 1080 for 1080p
+bash scripts/download.sh --quality 720 -- "https://example.com/video"
+# Explicit output directory
+bash scripts/download.sh --path "$HOME/Downloads/yt-dlp" -- "https://example.com/video"
+# List formats without writing downloads
+bash scripts/download.sh --list -- "https://example.com/video"
+# Playlist, only when requested
+bash scripts/download.sh --playlist -- "https://example.com/playlist"
 ```
 
 ## Workflow
-1. Detect platform (YouTube often needs `--cookies-from-browser chrome`)
-2. Ask for intent if unclear (video vs audio, subs, quality, output directory)
-3. Build a safe command (http/https URL, sanitize output path)
-4. Execute using the system exec tool
-5. Report saved path and any errors; suggest `-F` on format errors
+1. Resolve the requested video/audio, subtitles, quality and destination; ask only if needed.
+2. Check dependencies and announce the destination and network access.
+3. Invoke the helper with the requested options and exactly one HTTP(S) URL. Pass the configured `download_path` through `--path` when set.
+4. Report the saved location or error. Do not claim success if the command fails.
 
 ## Troubleshooting
-- 403 on YouTube → add `--cookies-from-browser chrome`
-- Missing ffmpeg for audio → warn and suggest installing ffmpeg
-- Interrupted downloads → yt-dlp auto-resumes on retry
+- 403 or login required: report the access failure. Do not automatically retry with browser cookies; follow the authentication authorization rule above.
+- Missing dependency: explain what is needed and seek installation authorization if not already provided.
+- Interrupted download: one retry with the same anonymous options is reasonable; stop if it fails again.
+- Format unavailable: list formats, then choose one consistent with the requested quality.
